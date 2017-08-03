@@ -25,11 +25,10 @@ import numpy
 
 
 class SwiftRenderer(RendererBase):
-    def __init__(self, drawing_context: DrawingContext.DrawingContext):
+    def __init__(self, drawing_context: DrawingContext.DrawingContext, height):
         super().__init__()
         self.__drawing_context = drawing_context
-        self.height = 480
-        self.ppi = 96
+        self.__height = height
 
     def __setup_color(self, rgb_a):
         if len(rgb_a) == 3:
@@ -40,67 +39,61 @@ class SwiftRenderer(RendererBase):
 
     def draw_path(self, gc: GraphicsContextBase, path: Path, transform, rgbFace=None):
         # if path.codes is not None:
-        for vertex, code in path.iter_segments():
+        self.__drawing_context.begin_path()
+        for vertex, code in path.iter_segments(simplify=False, curves=True):
             if code == Path.MOVETO:
                 point = transform.transform_point(vertex)
-                self.__drawing_context.begin_path()
-                self.__drawing_context.move_to(point[0], self.height - point[1])
+                self.__drawing_context.move_to(point[0], self.__height - point[1])
             elif code == Path.LINETO:
                 point = transform.transform_point(vertex)
-                self.__drawing_context.line_to(point[0], self.height - point[1])
-                self.__drawing_context.stroke()
-                self.__drawing_context.stroke_style = self.__setup_color(gc.get_rgb())
+                self.__drawing_context.line_to(point[0], self.__height - point[1])
             elif code == Path.CLOSEPOLY:
-                # self.__drawing_context.fill_style = self.__setup_color(gc.f)
                 self.__drawing_context.close_path()
             elif code == Path.CURVE4:
                 cpoint0 = transform.transform_point(vertex[0:2])
                 cpoint1 = transform.transform_point(vertex[2:4])
                 endpoint = transform.transform_point(vertex[4:])
-                self.__drawing_context.bezier_curve_to(cpoint0[0], self.height - cpoint0[1], cpoint1[0], self.height - cpoint1[1], endpoint[0], self.height - endpoint[1])
-                # print(vertex)
+                self.__drawing_context.bezier_curve_to(cpoint0[0], self.__height - cpoint0[1], cpoint1[0], self.__height - cpoint1[1], endpoint[0], self.__height - endpoint[1])
             elif code == Path.CURVE3:
                 cpoint0 = transform.transform_point(vertex[0:2])
                 endpoint = transform.transform_point(vertex[2:])
-                self.__drawing_context.quadratic_curve_to(cpoint0[0], self.height - cpoint0[1], endpoint[0], self.height - endpoint[1])
-                # print(vertex)
+                self.__drawing_context.quadratic_curve_to(cpoint0[0], self.__height - cpoint0[1], endpoint[0], self.__height - endpoint[1])
         if rgbFace is not None:
             self.__drawing_context.fill_style = self.__setup_color(rgbFace)
             self.__drawing_context.fill()
-        # self.__drawing_context.line_width = self.points_to_pixels(gc.get_linewidth())
+        self.__drawing_context.line_width = self.points_to_pixels(gc.get_linewidth())
         self.__drawing_context.stroke_style = self.__setup_color(gc.get_rgb())
         self.__drawing_context.stroke()
 
     def draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
+        y = self.__height - y
         self.__drawing_context.save()
         self.__drawing_context.translate(x, y)
         self.__drawing_context.rotate(-numpy.deg2rad(angle))
         self.__drawing_context.translate(-x, -y)
+        self.__drawing_context.fill_style = self.__setup_color(gc.get_rgb())
         self.__drawing_context.fill_text(s, x, y)
         self.__drawing_context.restore()
 
     def draw_image(self, gc, x, y, im, transform=None):
-        self.__drawing_context.draw_image(im, x, y, 0, 0)
+        self.__drawing_context.draw_image(im, x, self.__height - y, 0, 0)
 
     def flipy(self):
-        return True
-
-    def get_canvas_width_height(self):
-        return 640, 480
+        return False
 
     def new_gc(self):
         return GraphicsContextBase()
 
-    def points_to_pixels(self, points):
-        # if backend doesn't have dpi, e.g., postscript or svg
-        return points
+    # def points_to_pixels(self, points):
+    #     # if backend doesn't have dpi, e.g., postscript or svg
+    #     return points
 
-    def get_text_width_height_descent(self, s, prop, ismath):
-        # TODO: replace this with something better. this is just an estimate.
-        one = self.points_to_pixels(prop.get_size_in_points())
-        h = one
-        w = one * len(s)
-        return w, h, 0
+    # def get_text_width_height_descent(self, s, prop, ismath):
+    #     # TODO: replace this with something better. this is just an estimate.
+    #     one = self.points_to_pixels(prop.get_size_in_points())
+    #     h = one
+    #     w = one * len(s)
+    #     return w, h, 0
 
 
 class SwiftCanvas(FigureCanvasBase):
@@ -109,7 +102,7 @@ class SwiftCanvas(FigureCanvasBase):
         self.__drawing_context = DrawingContext.DrawingContext()
 
     def draw(self):
-        renderer = SwiftRenderer(self.__drawing_context)
+        renderer = SwiftRenderer(self.__drawing_context, self.figure.get_figheight() * self.figure.get_dpi())
         self.figure.draw(renderer)
 
     def render(self, drawing_context: DrawingContext.DrawingContext):
