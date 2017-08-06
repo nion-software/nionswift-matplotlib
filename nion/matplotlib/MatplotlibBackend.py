@@ -25,9 +25,10 @@ import numpy
 
 
 class SwiftRenderer(RendererBase):
-    def __init__(self, drawing_context: DrawingContext.DrawingContext, height):
+    def __init__(self, drawing_context: DrawingContext.DrawingContext, height, font_metrics_fn):
         super().__init__()
         self.__drawing_context = drawing_context
+        self.__get_font_metrics_fn = font_metrics_fn
         self.__height = height
 
     def __setup_color(self, rgb_a):
@@ -35,7 +36,6 @@ class SwiftRenderer(RendererBase):
             rgb_a = rgb_a + (1)
         rgb_a = tuple([int(com * 255) for com in rgb_a[:3]]) + tuple([rgb_a[3]])
         return "rgba({}, {}, {}, {})".format(*rgb_a)
-        # print("rgba({}, {}, {}, {})".format(*rgb_a))
 
     def draw_path(self, gc: GraphicsContextBase, path: Path, transform, rgbFace=None):
         # if path.codes is not None:
@@ -84,25 +84,24 @@ class SwiftRenderer(RendererBase):
     def new_gc(self):
         return GraphicsContextBase()
 
-    # def points_to_pixels(self, points):
-    #     # if backend doesn't have dpi, e.g., postscript or svg
-    #     return points
+    @staticmethod
+    def get_font_from_props(prop):
+        # "normal 11px serif"
+        return "{} {}px {}".format(prop.get_slant(), prop.get_size(), prop.get_family()[0])
 
-    # def get_text_width_height_descent(self, s, prop, ismath):
-    #     # TODO: replace this with something better. this is just an estimate.
-    #     one = self.points_to_pixels(prop.get_size_in_points())
-    #     h = one
-    #     w = one * len(s)
-    #     return w, h, 0
+    def get_text_width_height_descent(self, s, prop, ismath=False):
+        font_metrics = self.__get_font_metrics_fn(SwiftRenderer.get_font_from_props(prop), s)
+        return font_metrics.width, font_metrics.height, font_metrics.descent
 
 
 class SwiftCanvas(FigureCanvasBase):
-    def __init__(self, figure):
+    def __init__(self, figure, get_font_metrics_fn):
         super().__init__(figure)
         self.__drawing_context = DrawingContext.DrawingContext()
+        self.__get_font_metrics_fn = get_font_metrics_fn
 
     def draw(self):
-        renderer = SwiftRenderer(self.__drawing_context, self.figure.get_figheight() * self.figure.get_dpi())
+        renderer = SwiftRenderer(self.__drawing_context, self.figure.get_figheight() * self.figure.get_dpi(), self.__get_font_metrics_fn)
         self.figure.draw(renderer)
 
     def render(self, drawing_context: DrawingContext.DrawingContext):
