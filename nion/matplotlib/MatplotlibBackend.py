@@ -39,41 +39,41 @@ class SwiftRenderer(RendererBase):
 
     def draw_path(self, gc: GraphicsContextBase, path: Path, transform, rgbFace=None):
         # if path.codes is not None:
-        self.__drawing_context.begin_path()
-        for vertex, code in path.iter_segments(simplify=False, curves=True):
-            if code == Path.MOVETO:
-                point = transform.transform_point(vertex)
-                self.__drawing_context.move_to(point[0], self.__height - point[1])
-            elif code == Path.LINETO:
-                point = transform.transform_point(vertex)
-                self.__drawing_context.line_to(point[0], self.__height - point[1])
-            elif code == Path.CLOSEPOLY:
-                self.__drawing_context.close_path()
-            elif code == Path.CURVE4:
-                cpoint0 = transform.transform_point(vertex[0:2])
-                cpoint1 = transform.transform_point(vertex[2:4])
-                endpoint = transform.transform_point(vertex[4:])
-                self.__drawing_context.bezier_curve_to(cpoint0[0], self.__height - cpoint0[1], cpoint1[0], self.__height - cpoint1[1], endpoint[0], self.__height - endpoint[1])
-            elif code == Path.CURVE3:
-                cpoint0 = transform.transform_point(vertex[0:2])
-                endpoint = transform.transform_point(vertex[2:])
-                self.__drawing_context.quadratic_curve_to(cpoint0[0], self.__height - cpoint0[1], endpoint[0], self.__height - endpoint[1])
-        if rgbFace is not None:
-            self.__drawing_context.fill_style = self.__setup_color(rgbFace)
-            self.__drawing_context.fill()
-        self.__drawing_context.line_width = self.points_to_pixels(gc.get_linewidth())
-        self.__drawing_context.stroke_style = self.__setup_color(gc.get_rgb())
-        self.__drawing_context.stroke()
+        with self.__drawing_context.saver():
+            self.__drawing_context.begin_path()
+            for vertex, code in path.iter_segments(simplify=False, curves=True):
+                if code == Path.MOVETO:
+                    point = transform.transform_point(vertex)
+                    self.__drawing_context.move_to(point[0], self.__height - point[1])
+                elif code == Path.LINETO:
+                    point = transform.transform_point(vertex)
+                    self.__drawing_context.line_to(point[0], self.__height - point[1])
+                elif code == Path.CLOSEPOLY:
+                    self.__drawing_context.close_path()
+                elif code == Path.CURVE4:
+                    cpoint0 = transform.transform_point(vertex[0:2])
+                    cpoint1 = transform.transform_point(vertex[2:4])
+                    endpoint = transform.transform_point(vertex[4:])
+                    self.__drawing_context.bezier_curve_to(cpoint0[0], self.__height - cpoint0[1], cpoint1[0], self.__height - cpoint1[1], endpoint[0], self.__height - endpoint[1])
+                elif code == Path.CURVE3:
+                    cpoint0 = transform.transform_point(vertex[0:2])
+                    endpoint = transform.transform_point(vertex[2:])
+                    self.__drawing_context.quadratic_curve_to(cpoint0[0], self.__height - cpoint0[1], endpoint[0], self.__height - endpoint[1])
+            if rgbFace is not None:
+                self.__drawing_context.fill_style = self.__setup_color(rgbFace)
+                self.__drawing_context.fill()
+            self.__drawing_context.line_width = self.points_to_pixels(gc.get_linewidth())
+            self.__drawing_context.stroke_style = self.__setup_color(gc.get_rgb())
+            self.__drawing_context.stroke()
 
     def draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
         y = self.__height - y
-        self.__drawing_context.save()
-        self.__drawing_context.translate(x, y)
-        self.__drawing_context.rotate(-numpy.deg2rad(angle))
-        self.__drawing_context.translate(-x, -y)
-        self.__drawing_context.fill_style = self.__setup_color(gc.get_rgb())
-        self.__drawing_context.fill_text(s, x, y)
-        self.__drawing_context.restore()
+        with self.__drawing_context.saver():
+            self.__drawing_context.translate(x, y)
+            self.__drawing_context.rotate(-numpy.deg2rad(angle))
+            self.__drawing_context.translate(-x, -y)
+            self.__drawing_context.fill_style = self.__setup_color(gc.get_rgb())
+            self.__drawing_context.fill_text(s, x, y)
 
     def draw_image(self, gc, x, y, im, transform=None):
         self.__drawing_context.draw_image(im, x, self.__height - y, 0, 0)
