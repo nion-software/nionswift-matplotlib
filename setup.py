@@ -17,7 +17,7 @@ setuptools.setup(
     long_description=open("README.rst").read(),
     url="https://github.com/nion-software/nionswift-matplotlib",
     packages=["nion.matplotlib", ],
-    install_requires=['matplotlib'],
+    install_requires=['matplotlib', 'nionswift'],
     license='Apache 2.0',
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
