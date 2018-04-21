@@ -10,14 +10,14 @@ import os
 
 setuptools.setup(
     name="nionswift-matplotlib",
-    version="0.0.1",
+    version="0.1.0",
     author="Nion Software",
     author_email="swift@nion.com",
     description="Matplotlib backend for using matplotlib directly within Nion Swift.",
     long_description=open("README.rst").read(),
     url="https://github.com/nion-software/nionswift-matplotlib",
-    packages=["nion.matplotlib", ],
-    install_requires=['matplotlib', 'nionswift'],
+    packages=["nion.matplotlib"],
+    install_requires=['matplotlib'],
     license='Apache 2.0',
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
